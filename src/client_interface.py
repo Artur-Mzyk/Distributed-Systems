@@ -75,12 +75,17 @@ class Window(tk.Frame):
 
         self.lobby_tab = tk.Frame(self.tabs, highlightbackground=HIGHLIGHT, highlightthickness=BORDER)
         self.tabs.add(self.lobby_tab, text="Lobby")
+        self.localization_entries = [ttk.Entry(self.lobby_tab) for _ in range(2)]
 
-        self.name_entry = ttk.Entry(self.lobby_tab)
-        self.name_entry.grid(row=0, column=0)
-        self.name_button = ttk.Button(self.lobby_tab, text="Enter name", command=self.join)
-        self.name_button.grid(row=0, column=1)
-        self.name = None
+        for i, entry in enumerate(self.localization_entries):
+            entry.grid(row=0, column=i, padx=5)
+
+        self.localization_button = ttk.Button(self.lobby_tab, text="Enter localization", command=self.join)
+        self.localization_button.grid(row=0, column=2)
+        self.localization = None
+
+        self.localization_warning_label = tk.StringVar(value="")
+        tk.Label(self.lobby_tab, textvariable=self.localization_warning_label, font=("Garamond", 16, "bold")).grid(row=1, column=0, columnspan=3)
 
         self.chat_tab = tk.Frame(self.tabs, highlightbackground=HIGHLIGHT, highlightthickness=BORDER)
         self.tabs.add(self.chat_tab, text="Chat")
@@ -101,12 +106,12 @@ class Window(tk.Frame):
         Thread(target=self.receive_messages).start()
 
     def join(self) -> None:
-        self.name_button["state"] = "disabled"
-        self.name = self.name_entry.get()
-        self.root.client.send_message(msg=f"[SERVER] {self.name} has joined the chat\n")
+        self.localization_button["state"] = "disabled"
+        self.localization = f"({self.localization_entries[0].get()}, {self.localization_entries[1].get()})"
+        self.root.client.send_message(msg=f"[LOC] {self.localization}")
         self.tabs.hide(0)
         self.tabs.select(1)
-        self.name_label_text.set(f"Your name: {self.name}")
+        self.name_label_text.set(f"Your localization: {self.localization}")
 
     def send_message(self, msg: Optional[str] = None) -> None:
         """
@@ -115,7 +120,7 @@ class Window(tk.Frame):
         """
 
         if msg is None:
-            msg = f"{self.name}: {self.chat_entry.get()}\n"
+            msg = f"{self.localization}: {self.chat_entry.get()}\n"
 
         else:
             msg = self.chat_entry.get()
@@ -130,10 +135,18 @@ class Window(tk.Frame):
 
         while True:
             messages = self.root.client.receive_messages()
-            self.chat_area.delete('1.0', 'end')
 
-            for msg in messages:
-                self.chat_area.insert('end', msg)
+            if messages == "Not connected":
+                self.localization_button["state"] = "normal"
+                self.tabs.select(0)
+                self.tabs.hide(1)
+                self.localization_warning_label.set("Improper")
+
+            else:
+                self.chat_area.delete('1.0', 'end')
+
+                for msg in messages:
+                    self.chat_area.insert('end', msg)
 
 
 client_app = MainApp()
