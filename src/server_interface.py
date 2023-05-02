@@ -13,6 +13,7 @@ from tkinter.scrolledtext import ScrolledText
 from typing import Optional, List
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.patches import Rectangle
 
 # PROJECT MODULES
 from config import *
@@ -98,6 +99,7 @@ class MainApp(tk.Tk):
                             x = int(loc[1:-1].split(", ")[0])
                             y = int(loc[1:-1].split(", ")[1])
                             ax.scatter([x], [y])
+                            ax.add_patch(Rectangle((x - 75, y - 75), 150, 150, fill=False))
 
                         canvas = FigureCanvasTkAgg(fig, self.frame)
                         canvas.draw()
