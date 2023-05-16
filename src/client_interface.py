@@ -15,6 +15,7 @@ from typing import Optional, List
 from config import *
 from communication import send
 from client import Client
+from artificial_client import ArtificialClient
 
 
 # CLASSES
@@ -37,6 +38,7 @@ class MainApp(tk.Tk):
 
         # Client socket
         self.client = Client()
+        self.artificial_client = ArtificialClient()
 
         # Main frame
         container = ttk.Frame(self)
@@ -104,6 +106,7 @@ class Window(tk.Frame):
         self.tabs.hide(1)
 
         Thread(target=self.receive_messages).start()
+        Thread(target=self.artificial_receive_messages).start()
 
     def join(self) -> None:
         self.localization_button["state"] = "disabled"
@@ -135,6 +138,26 @@ class Window(tk.Frame):
 
         while True:
             messages = self.root.client.receive_messages()
+
+            if messages == "Not connected":
+                self.localization_button["state"] = "normal"
+                self.tabs.select(0)
+                self.tabs.hide(1)
+                self.localization_warning_label.set("Improper")
+
+            else:
+                self.chat_area.delete('1.0', 'end')
+
+                for msg in messages:
+                    self.chat_area.insert('end', msg)
+
+    def artificial_receive_messages(self) -> None:
+        """
+        Method to receive messages
+        """
+
+        while True:
+            messages = self.root.artificial_client.receive_messages()
 
             if messages == "Not connected":
                 self.localization_button["state"] = "normal"

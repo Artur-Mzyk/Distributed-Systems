@@ -6,11 +6,12 @@ import time
 import tkinter as tk
 import tkinter.ttk as ttk
 import matplotlib.pyplot as plt
+import random
 
 from threading import Thread
 from tkinter.messagebox import showinfo
 from tkinter.scrolledtext import ScrolledText
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.patches import Rectangle
@@ -18,6 +19,7 @@ from matplotlib.patches import Rectangle
 # PROJECT MODULES
 from config import *
 from server import Server
+from artificial_server import ArtificialServer
 from communication import send, receive
 
 
@@ -39,10 +41,10 @@ class MainApp(tk.Tk):
         self.geometry(f"{self.winfo_screenwidth()}x{self.winfo_screenheight()}")
         self.title(TITLE)
 
-        # Client socket
+        # Server socket
         self.server_sock = socket(AF_INET, SOCK_STREAM)
         self.server_sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        self.server_sock.bind(('', PORT))
+        self.server_sock.bind(('', MAIN_PORT))
         self.server_sock.listen(MAX_CLIENTS)
 
         Thread(target=self.accept_clients, args=(N_SPECTATORS,)).start()
@@ -50,6 +52,18 @@ class MainApp(tk.Tk):
         self.localizations = []
         self.client_socks = []
         self.messages = []
+
+        # Artificial server socket
+        self.artificial_server_sock = socket(AF_INET, SOCK_STREAM)
+        self.artificial_server_sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        self.artificial_server_sock.bind(('', ARTIFICIAL_PORT))
+        self.artificial_server_sock.listen(MAX_CLIENTS)
+
+        Thread(target=self.artificial_accept_clients, args=(N_SPECTATORS,)).start()
+        print("[ARTIFICIAL SERVER STARTED]")
+        # self.localizations = []
+        self.artificial_client_socks = []
+        # self.messages = []
 
         # Main frame
         container = ttk.Frame(self)
@@ -114,6 +128,20 @@ class MainApp(tk.Tk):
                 print(f"[SERVER ERROR] {e}")
                 break
 
+    def artificial_handle_client(self, client_sock: socket) -> None:
+        """
+        Method to handle the client
+        :param client_sock: Client socket
+        """
+
+        x1, y1, x2, y2 = SPACE_RANGE
+        x = random.randint(x1, x2)
+        y = random.randint(y1, y2)
+
+        for c in self.artificial_client_socks:
+            self.messages.append(f"[SERVER] There is a new object at localization ({x}, {y})\n")
+            send(c, self.messages)
+
     def accept_clients(self, n_clients: int) -> None:
         """
         Method to accept the chat clients
@@ -124,6 +152,17 @@ class MainApp(tk.Tk):
             client_sock, _ = self.server_sock.accept()
             self.client_socks.append(client_sock)
             Thread(target=self.handle_client, args=(client_sock,)).start()
+
+    def artificial_accept_clients(self, n_clients: int) -> None:
+        """
+        Method to accept the chat clients
+        :param n_clients: Number of clients
+        """
+
+        for _ in range(n_clients):
+            client_sock, _ = self.artificial_server_sock.accept()
+            self.artificial_client_socks.append(client_sock)
+            Thread(target=self.artificial_handle_client, args=(client_sock,)).start()
 
 
 server_app = MainApp()

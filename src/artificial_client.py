@@ -6,12 +6,12 @@ from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from typing import List
 
 # PROJECT MODULES
-from config import HOST, MAIN_PORT
+from config import HOST, ARTIFICIAL_PORT
 from communication import send, receive
 
 
 # CLASSES
-class Client:
+class ArtificialClient:
     """
     Class to represent a client
     """
@@ -23,7 +23,7 @@ class Client:
 
         self.client_sock = socket(AF_INET, SOCK_STREAM)
         self.client_sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        self.client_sock.connect((HOST, MAIN_PORT))
+        self.client_sock.connect((HOST, ARTIFICIAL_PORT))
 
     def send_message(self, msg: str) -> None:
         """
