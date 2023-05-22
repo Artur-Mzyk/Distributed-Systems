@@ -3,7 +3,8 @@
 
 # GLOBAL CONSTANTS
 HOST: str = "localhost"
-PORT: int = 2121
+MAIN_PORT: int = 2121
+ARTIFICIAL_PORT: int = 2122
 MAX_CLIENTS: int = 15
 N_SPECTATORS: int = 3
 HIGHLIGHT: str = "black"

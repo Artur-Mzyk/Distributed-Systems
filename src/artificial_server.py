@@ -11,7 +11,7 @@ from communication import send, receive
 
 
 # CLASSES
-class Server:
+class ArtificialServer:
     """
     Class to represent the server
     """
