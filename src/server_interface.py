@@ -7,6 +7,8 @@ import tkinter as tk
 import tkinter.ttk as ttk
 import matplotlib.pyplot as plt
 import random
+import pandas as pd
+import seaborn as sns
 
 from threading import Thread
 from tkinter.messagebox import showinfo
@@ -15,12 +17,15 @@ from typing import Optional, List, Tuple
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.patches import Rectangle
+from sqlalchemy import create_engine
 
 # PROJECT MODULES
 from config import *
 from server import Server
-from artificial_server import ArtificialServer
 from communication import send, receive
+from database.database_architecture import create_architecture
+from database.database_upload import upload_data
+from database.database_queries import DatabaseQueries
 
 
 # CLASSES
@@ -47,23 +52,15 @@ class MainApp(tk.Tk):
         self.server_sock.bind(('', MAIN_PORT))
         self.server_sock.listen(MAX_CLIENTS)
 
+        engine = create_engine(DB_STRING)
+        create_architecture(engine=engine)
+        upload_data(engine=engine)
+
         Thread(target=self.accept_clients, args=(N_SPECTATORS,)).start()
         print("[SERVER STARTED]")
         self.localizations = []
         self.client_socks = []
         self.messages = []
-
-        # Artificial server socket
-        self.artificial_server_sock = socket(AF_INET, SOCK_STREAM)
-        self.artificial_server_sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        self.artificial_server_sock.bind(('', ARTIFICIAL_PORT))
-        self.artificial_server_sock.listen(MAX_CLIENTS)
-
-        Thread(target=self.artificial_accept_clients, args=(N_SPECTATORS,)).start()
-        print("[ARTIFICIAL SERVER STARTED]")
-        # self.localizations = []
-        self.artificial_client_socks = []
-        # self.messages = []
 
         # Main frame
         container = ttk.Frame(self)
@@ -83,20 +80,24 @@ class MainApp(tk.Tk):
         while True:
             try:
                 msg = receive(client_sock)
+                alert, content = msg.split("] ")[0][1:], msg.split("] ")[1]
 
-                if "[LOC]" in msg:
-                    loc = msg[6:]
-                    x = int(loc[1:-1].split(", ")[0])
-                    y = int(loc[1:-1].split(", ")[1])
+                if alert == "LOCALIZATION":
+                    x = int(content[1:-1].split(", ")[0])
+                    y = int(content[1:-1].split(", ")[1])
                     x1, y1, x2, y2 = SPACE_RANGE
 
-                    if loc in self.localizations or x < x1 or x > x2 or y < y1 or y > y2:
-                        send(client_sock, "Not connected")
+                    if x < x1 or x > x2 or y < y1 or y > y2:
+                        send(client_sock, "[NOT CONNECTED] Out of range")
+                        continue
+
+                    elif content in self.localizations:
+                        send(client_sock, "[NOT CONNECTED] Duplicated")
                         continue
 
                     else:
-                        self.localizations.append(loc)
-                        msg = f"[SERVER] There is a new research unit at localization {loc}\n"
+                        self.localizations.append(content)
+                        msg = f"[SERVER] New research unit at localization {content}\n"
 
                         for widget in self.frame.winfo_children():
                             widget.destroy()
@@ -104,8 +105,7 @@ class MainApp(tk.Tk):
                         fig = plt.Figure(figsize=(10, 10), dpi=100)
                         ax = fig.add_subplot(1, 1, 1)
                         ax.grid()
-                        ax.set_title("x")
-                        ax.set_ylabel("y")
+                        ax.set_title("x"), ax.set_ylabel("y")
                         ax.set_xlim([x1, x2])
                         ax.set_ylim([y1, y2])
 
@@ -122,25 +122,11 @@ class MainApp(tk.Tk):
                 self.messages.append(msg)
 
                 for c in self.client_socks:
-                    send(c, self.messages)
+                    send(c, "\n".join(self.messages))
 
             except Exception as e:
                 print(f"[SERVER ERROR] {e}")
                 break
-
-    def artificial_handle_client(self, client_sock: socket) -> None:
-        """
-        Method to handle the client
-        :param client_sock: Client socket
-        """
-
-        x1, y1, x2, y2 = SPACE_RANGE
-        x = random.randint(x1, x2)
-        y = random.randint(y1, y2)
-
-        for c in self.artificial_client_socks:
-            self.messages.append(f"[SERVER] There is a new object at localization ({x}, {y})\n")
-            send(c, self.messages)
 
     def accept_clients(self, n_clients: int) -> None:
         """
@@ -152,17 +138,6 @@ class MainApp(tk.Tk):
             client_sock, _ = self.server_sock.accept()
             self.client_socks.append(client_sock)
             Thread(target=self.handle_client, args=(client_sock,)).start()
-
-    def artificial_accept_clients(self, n_clients: int) -> None:
-        """
-        Method to accept the chat clients
-        :param n_clients: Number of clients
-        """
-
-        for _ in range(n_clients):
-            client_sock, _ = self.artificial_server_sock.accept()
-            self.artificial_client_socks.append(client_sock)
-            Thread(target=self.artificial_handle_client, args=(client_sock,)).start()
 
 
 server_app = MainApp()

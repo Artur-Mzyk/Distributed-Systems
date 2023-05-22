@@ -11,3 +11,4 @@ HIGHLIGHT: str = "black"
 BORDER: int = 2
 TITLE: str = "Extraterrestrial intelligence detection"
 SPACE_RANGE = (-1000, -1000, 1000, 1000)
+DB_STRING = "postgresql://postgres:postgres@localhost:5432/postgres"

@@ -5,17 +5,24 @@
 import time
 import tkinter as tk
 import tkinter.ttk as ttk
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 from tkinter.messagebox import showinfo
 from tkinter.scrolledtext import ScrolledText
 from threading import Thread
 from typing import Optional, List
+from sqlalchemy import create_engine
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 # PROJECT PACKAGES
 from config import *
 from communication import send
 from client import Client
-from artificial_client import ArtificialClient
+from database.database_architecture import create_architecture
+from database.database_upload import upload_data
+from database.database_queries import DatabaseQueries
 
 
 # CLASSES
@@ -38,7 +45,6 @@ class MainApp(tk.Tk):
 
         # Client socket
         self.client = Client()
-        self.artificial_client = ArtificialClient()
 
         # Main frame
         container = ttk.Frame(self)
@@ -78,9 +84,7 @@ class Window(tk.Frame):
         self.lobby_tab = tk.Frame(self.tabs, highlightbackground=HIGHLIGHT, highlightthickness=BORDER)
         self.tabs.add(self.lobby_tab, text="Lobby")
         self.localization_entries = [ttk.Entry(self.lobby_tab) for _ in range(2)]
-
-        for i, entry in enumerate(self.localization_entries):
-            entry.grid(row=0, column=i, padx=5)
+        _ = [entry.grid(row=0, column=i, padx=5) for i, entry in enumerate(self.localization_entries)]
 
         self.localization_button = ttk.Button(self.lobby_tab, text="Enter localization", command=self.join)
         self.localization_button.grid(row=0, column=2)
@@ -89,47 +93,55 @@ class Window(tk.Frame):
         self.localization_warning_label = tk.StringVar(value="")
         tk.Label(self.lobby_tab, textvariable=self.localization_warning_label, font=("Garamond", 16, "bold")).grid(row=1, column=0, columnspan=3)
 
-        self.chat_tab = tk.Frame(self.tabs, highlightbackground=HIGHLIGHT, highlightthickness=BORDER)
-        self.tabs.add(self.chat_tab, text="Chat")
+        self.logs_tab = tk.Frame(self.tabs, highlightbackground=HIGHLIGHT, highlightthickness=BORDER)
+        self.tabs.add(self.logs_tab, text="Logs")
 
-        self.chat_area = ScrolledText(self.chat_tab, width=70, height=22, font=("Garamond", 12))
-        self.chat_area.grid(row=0, column=0, columnspan=4, padx=10, pady=(30, 10))
-
-        self.chat_entry = ttk.Entry(self.chat_tab, width=70)
-        self.chat_entry.grid(row=1, column=0, columnspan=3, pady=(0, 30))
-
-        ttk.Button(self.chat_tab, text="Send", command=self.send_message).grid(row=1, column=3, pady=(0, 30))
+        self.logs_area = ScrolledText(self.logs_tab, width=70, height=22, font=("Garamond", 12))
+        self.logs_area.grid(row=0, column=0, columnspan=4, padx=10, pady=(30, 10))
 
         self.name_label_text = tk.StringVar(value="")
-        tk.Label(self.chat_tab, textvariable=self.name_label_text, font=("Garamond", 16, "bold")).grid(row=2, column=0)
+        tk.Label(self.logs_tab, textvariable=self.name_label_text, font=("Garamond", 16, "bold")).grid(row=2, column=0)
+
+        self.map_tab = tk.Frame(self.tabs, highlightbackground=HIGHLIGHT, highlightthickness=BORDER)
+        self.tabs.add(self.map_tab, text="Map")
 
         self.tabs.hide(1)
+        self.tabs.hide(2)
 
         Thread(target=self.receive_messages).start()
-        Thread(target=self.artificial_receive_messages).start()
 
     def join(self) -> None:
         self.localization_button["state"] = "disabled"
         self.localization = f"({self.localization_entries[0].get()}, {self.localization_entries[1].get()})"
-        self.root.client.send_message(msg=f"[LOC] {self.localization}")
-        self.tabs.hide(0)
-        self.tabs.select(1)
-        self.name_label_text.set(f"Your localization: {self.localization}")
+        self.root.client.send_message(msg=f"[LOCALIZATION] {self.localization}")
+        self.tabs.hide(0), self.tabs.select(1), self.tabs.select(2)
+        self.name_label_text.set(f"Research unit's localization: {self.localization}")
 
-    def send_message(self, msg: Optional[str] = None) -> None:
-        """
-        Method to send the message
-        :param msg: Message
-        """
+        engine = create_engine(DB_STRING)
+        DQ = DatabaseQueries(engine=engine)
+        data_to_upload = DQ.get_grouped_information_of_objects_localization(time_window=pd.DateOffset(seconds=0.5))
+        DQ.add_server_read_positions_info(data_to_upload)
+        print(data_to_upload)
 
-        if msg is None:
-            msg = f"{self.localization}: {self.chat_entry.get()}\n"
+        for widget in self.map_tab.winfo_children():
+            widget.destroy()
 
-        else:
-            msg = self.chat_entry.get()
+        fig = plt.Figure(figsize=(10, 10), dpi=100)
+        ax = fig.add_subplot(1, 1, 1)
+        ax.grid()
+        ax.set_title("x"), ax.set_ylabel("y")
 
-        self.root.client.send_message(msg)
-        self.chat_entry.delete('0', 'end')
+        df = DQ.get_result()
+        sns.scatterplot(data=df, x='x_localization', y='y_localization', hue='object_id', ax=ax)
+        # ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        # ax.xlim(-1000, 1000)
+        # ax.ylim(-1000, 1000)
+        # plt.show()
+        # plt.clf()
+
+        canvas = FigureCanvasTkAgg(fig, self.map_tab)
+        canvas.draw()
+        canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
 
     def receive_messages(self) -> None:
         """
@@ -138,38 +150,20 @@ class Window(tk.Frame):
 
         while True:
             messages = self.root.client.receive_messages()
+            alert, content = messages.split("]")[0][1:], messages.split("]")[1]
 
-            if messages == "Not connected":
+            if content == "[NOT CONNECTED]":
                 self.localization_button["state"] = "normal"
                 self.tabs.select(0)
                 self.tabs.hide(1)
+                self.tabs.hide(2)
                 self.localization_warning_label.set("Improper")
 
             else:
-                self.chat_area.delete('1.0', 'end')
+                self.logs_area.delete('1.0', 'end')
 
-                for msg in messages:
-                    self.chat_area.insert('end', msg)
-
-    def artificial_receive_messages(self) -> None:
-        """
-        Method to receive messages
-        """
-
-        while True:
-            messages = self.root.artificial_client.receive_messages()
-
-            if messages == "Not connected":
-                self.localization_button["state"] = "normal"
-                self.tabs.select(0)
-                self.tabs.hide(1)
-                self.localization_warning_label.set("Improper")
-
-            else:
-                self.chat_area.delete('1.0', 'end')
-
-                for msg in messages:
-                    self.chat_area.insert('end', msg)
+                for msg in messages.split("\n"):
+                    self.logs_area.insert('end', msg)
 
 
 client_app = MainApp()
