@@ -20,7 +20,7 @@ class DatabaseUpload:
         """Upload the generated data to the database."""
         self.generate_data_to_upload()
         self.refactor_data_to_upload()
-        self.data_to_upload.to_sql('space_info', con=self.engine, if_exists='append', index=True)
+        self.data_to_upload.to_sql('space_info_source', con=self.engine, if_exists='append', index=True)
 
     def refactor_data_to_upload(self):
         """Refactor the data to be uploaded.
@@ -55,7 +55,7 @@ def generate_trajectory_points(object_id: int):
     :param object_id: ID of the object.
     :return: DataFrame containing the generated trajectory points.
     """
-    number_of_sample = randint(10, 100)
+    number_of_sample = randint(50, 100)
     endpoints = generate_random_trajectory_endpoints()
     x_location = np.linspace(start=endpoints['x_coords'][0], stop=endpoints['x_coords'][1], num=number_of_sample)
     y_location = np.linspace(start=endpoints['y_coords'][0], stop=endpoints['y_coords'][1], num=number_of_sample)
@@ -64,9 +64,9 @@ def generate_trajectory_points(object_id: int):
     y_diff = np.max(endpoints['y_coords']) - np.min(endpoints['y_coords'])
     speed = np.sqrt(x_diff ** 2 + y_diff ** 2) / number_of_sample
 
-    start_date = datetime.now() + pd.DateOffset(seconds=60)
+    start_date = datetime.now()
     datetime_array = pd.date_range(start=start_date,
-                                   end=start_date + pd.DateOffset(seconds=speed * number_of_sample),
+                                   end=start_date + pd.DateOffset(seconds=speed * number_of_sample / 10),
                                    periods=number_of_sample)
 
     generated_data = pd.DataFrame({'object_id': object_id,
