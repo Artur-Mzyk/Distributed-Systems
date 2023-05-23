@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import random
 
+from typing import List, Dict
+
 from tkinter.messagebox import showinfo
 from tkinter.scrolledtext import ScrolledText
 from threading import Thread
@@ -55,6 +57,13 @@ class MainApp(tk.Tk):
         frame = Window(container, self)
         frame.pack()
         frame.tkraise()
+
+
+def make_signal_noise(localizations: List[Dict], min_noise_val: int, max_noise_val: int) -> List[Dict]:
+    for localization in localizations:
+        localization['x_localization'] = localization['x_localization'] + random.randint(min_noise_val, max_noise_val)
+        localization['y_localization'] = localization['y_localization'] + random.randint(min_noise_val, max_noise_val)
+    return localizations
 
 
 class Window(tk.Frame):
@@ -107,6 +116,13 @@ class Window(tk.Frame):
 
         engine = create_engine(DB_STRING)
         DQ = DatabaseQueries(engine=engine)
+
+        data_to_upload = DQ.get_grouped_information_of_objects_localization(time_window=pd.DateOffset(seconds=0.5))
+        data_to_upload_noised = make_signal_noise(data_to_upload, 0, 10)
+        DQ.add_server_read_positions_info(data_to_upload_noised)
+
+        for widget in self.map_tab.winfo_children():
+            widget.destroy()
 
         fig = plt.Figure(figsize=(10, 10), dpi=100)
         ax = fig.add_subplot(1, 1, 1)
