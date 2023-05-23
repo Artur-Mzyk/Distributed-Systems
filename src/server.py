@@ -101,8 +101,10 @@ class MainApp(tk.Tk):
 
                 elif alert is not None and alert == "MAP":
                     self.map = pd.concat([self.map, content], ignore_index=True)
-                    print(self.map)
                     self.draw_map()
+
+                elif alert is not None and alert == "REQUEST":
+                    send(client_sock, Data(self.map, "GLOBAL"))
 
             except Exception as e:
                 print(f"[SERVER ERROR] {e}")
