@@ -57,10 +57,10 @@ class MainApp(tk.Tk):
 
         Thread(target=self.accept_clients, args=(N_SPECTATORS,)).start()
         print("[SERVER STARTED]")
-        self.localizations = []
+        self.locations = []
         self.client_socks = []
         self.messages = []
-        self.map = pd.DataFrame()
+        self.map = None
 
         # Main frame
         container = ttk.Frame(self)
@@ -71,6 +71,15 @@ class MainApp(tk.Tk):
         self.frame = tk.Frame(container)
         self.frame.grid(row=0, column=0)
 
+        fig = plt.Figure(figsize=(10, 10), dpi=100)
+        self.ax = fig.add_subplot(1, 1, 1)
+        x1, y1, x2, y2 = SPACE_RANGE
+        self.ax.grid()
+        self.ax.set_title("x"), self.ax.set_ylabel("y")
+        self.ax.set_xlim([x1, x2]), self.ax.set_ylim([y1, y2])
+        self.canvas = FigureCanvasTkAgg(fig, self.frame)
+        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
     def handle_client(self, client_sock: socket) -> None:
         """
         Method to handle the client
@@ -79,32 +88,29 @@ class MainApp(tk.Tk):
 
         while True:
             try:
-                data = receive(client_sock)
-                alert, content = data.alert, data.content
+                alert, content = receive(client_sock)
 
-                if alert is not None and alert == "LOCALIZATION":
-                    x = int(content[1:-1].split(", ")[0])
-                    y = int(content[1:-1].split(", ")[1])
+                if alert == "LOCATION":
+                    (x, y), rng = content
                     x1, y1, x2, y2 = SPACE_RANGE
 
                     if x < x1 or x > x2 or y < y1 or y > y2:
-                        send(client_sock, Data("Out of range", alert="NOT CONNECTED"))
-                        continue
+                        send(client_sock, Data("NOT CONNECTED", "Out of range"))
 
-                    elif content in self.localizations:
-                        send(client_sock, Data("Duplicated", alert="NOT CONNECTED"))
-                        continue
+                    elif content in self.locations:
+                        send(client_sock, Data("NOT CONNECTED", "Duplicated"))
 
                     else:
-                        self.localizations.append(content)
+                        self.locations.append(content)
+                        send(client_sock, Data("CONNECTED", ""))
                         # self.draw_map()
 
-                elif alert is not None and alert == "MAP":
-                    self.map = pd.concat([self.map, content], ignore_index=True)
+                elif alert == "MAP":
+                    self.map = content
                     self.draw_map()
 
-                elif alert is not None and alert == "REQUEST":
-                    send(client_sock, Data(self.map, "GLOBAL"))
+                elif alert == "REQUEST":
+                    send(client_sock, Data("GLOBAL", self.map))
 
             except Exception as e:
                 print(f"[SERVER ERROR] {e}")
@@ -122,27 +128,28 @@ class MainApp(tk.Tk):
             Thread(target=self.handle_client, args=(client_sock,)).start()
 
     def draw_map(self) -> None:
-        for widget in self.frame.winfo_children():
-            widget.destroy()
+        self.ax.clear()
 
+        print(self.map)
+
+        sns.scatterplot(data=self.map, x='x_localization', y='y_localization', hue='object_id', ax=self.ax)
         x1, y1, x2, y2 = SPACE_RANGE
-        fig = plt.Figure(figsize=(10, 10), dpi=100)
-        ax = fig.add_subplot(1, 1, 1)
-        ax.grid()
-        ax.set_title("x"), ax.set_ylabel("y")
-        ax.set_xlim([x1, x2]), ax.set_ylim([y1, y2])
 
-        for loc in self.localizations:
-            x = int(loc[1:-1].split(", ")[0])
-            y = int(loc[1:-1].split(", ")[1])
-            ax.scatter([x], [y], marker="*")
+        for loc in self.locations:
+            (x, y), rng = loc
+            self.ax.scatter([x], [y], marker="*")
+            a = max(x - rng, x1)
+            b = max(y - rng, y1)
+            w = 2 * rng - max(0, a + 2 * rng - x2)
+            h = 2 * rng - max(0, b + 2 * rng - y2)
+            rect = Rectangle((a, b), w, h, fill=False)
+            self.ax.add_patch(rect)
+            self.ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+            self.ax.grid()
+            self.canvas.draw()
 
-        sns.scatterplot(data=self.map, x='x_localization', y='y_localization', hue='object_id', ax=ax)
-        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-
-        canvas = FigureCanvasTkAgg(fig, self.frame)
-        canvas.draw()
-        canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+        # DQ.add_server_read_positions_info(data_to_upload)
+        # df = DQ.get_result()
 
 
 server_app = MainApp()

@@ -2,8 +2,11 @@
 # -*- coding: utf-8 -*-
 
 # BUILT-IN PACKAGES
-from typing import Tuple
+from typing import Tuple, List
 
+
+# ALIASES
+Location = List[int]
 
 # GLOBAL CONSTANTS
 HOST: str = "localhost"
@@ -17,4 +20,5 @@ SPACE_RANGE: Tuple[int, int, int, int] = (-1000, -1000, 1000, 1000)
 DB_STRING: str = "postgresql://postgres:postgres@localhost:5432/postgres"
 REFRESH_TIME: float = 0.5
 MIN_NOISE_VAL: int = 0
-MAX_NOISE_VAL: int = 1
+MAX_NOISE_VAL: int = 10
+FONT: Tuple[str, int, str] = ("Garamond", 16, "bold")

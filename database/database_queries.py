@@ -57,16 +57,19 @@ class DatabaseQueries:
         return pd.DataFrame(self.engine.execute(stmt).fetchall())
 
     # serwer otrzymane informację od klientów czyli to z powyższego zapytania wrzuca na bazę
-    def add_server_read_positions_info(self, client_receive_data_to_upload: List[Dict]) -> None:
+    def add_server_read_positions_info(self, client_receive_data_to_upload: pd.DataFrame) -> None:
         """Add information about server read positions to the database.
         The space_receive_info connect all result for different source - clients
 
         :param client_receive_data_to_upload: A list of dictionaries containing position data.
         :return: None
         """
+
+        client_receive_data_to_upload['receive_date'] = client_receive_data_to_upload['sample_date']
+        client_receive_data_to_upload.drop(columns=['sample_date'], inplace=True)
         stmt = (
             insert(self.space_receive_info)
-            .values(client_receive_data_to_upload)
+            .values(client_receive_data_to_upload.to_dict(orient='records'))
         )
         self.engine.execute(stmt)
 

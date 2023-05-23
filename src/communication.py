@@ -16,15 +16,15 @@ class Data:
     Class to represent the data sent during the communication
     """
 
-    def __init__(self, content, alert: Optional[str] = None) -> None:
+    def __init__(self, alert: str, content) -> None:
         """
         Constructor
-        :param content: Data content
         :param alert: Data alert
+        :param content: Data content
         """
 
-        self.content = content
         self.alert = alert
+        self.content = content
 
 
 # FUNCTIONS
@@ -40,7 +40,7 @@ def send(sock: socket, data: Data) -> None:
     sock.sendall(serialized_data)
 
 
-def receive(sock: socket) -> Data:
+def receive(sock: socket):
     """
     Method to receive the data through the client socket
     :param sock: Client socket
@@ -55,4 +55,6 @@ def receive(sock: socket) -> Data:
         data += sock.recv(remaining_size)
         remaining_size = size - len(data)
 
-    return loads(data)
+    data = loads(data)
+
+    return data.alert, data.content
