@@ -6,13 +6,29 @@ import struct
 
 from socket import socket
 from pickle import dumps, loads
-from typing import Union, Tuple, List
+from typing import Union, Tuple, List, Optional
 
 # PROJECT PACKAGES
 
+# CLASSES
+class Data:
+    """
+    Class to represent the data sent during the communication
+    """
+
+    def __init__(self, content, alert: Optional[str] = None) -> None:
+        """
+        Constructor
+        :param content: Data content
+        :param alert: Data alert
+        """
+
+        self.content = content
+        self.alert = alert
+
 
 # FUNCTIONS
-def send(sock: socket, data: Union[str, List[str], None]) -> None:
+def send(sock: socket, data: Data) -> None:
     """
     Method to send the data through the client socket
     :param sock: Client socket
@@ -24,7 +40,7 @@ def send(sock: socket, data: Union[str, List[str], None]) -> None:
     sock.sendall(serialized_data)
 
 
-def receive(sock: socket) -> Union[str, None]:
+def receive(sock: socket) -> Data:
     """
     Method to receive the data through the client socket
     :param sock: Client socket
