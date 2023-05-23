@@ -184,7 +184,6 @@ class Window(tk.Frame):
         self.ax.clear()
         data_to_upload = self.DQ.get_space_data_in_client_range(client_range=self.range, client_location=self.location,
                                                                 time_window=pd.DateOffset(seconds=REFRESH_TIME))
-        data_to_upload = self.inference(data_to_upload)
         sns.scatterplot(data=data_to_upload, x='x_localization', y='y_localization', hue='object_id', ax=self.ax)
         x, y = self.location
         self.ax.scatter([x], [y], marker="*")
@@ -200,12 +199,6 @@ class Window(tk.Frame):
         self.canvas.draw()
         send(self.root.client_sock, Data("MAP", data_to_upload))
         self.root.after(int(1000 * REFRESH_TIME), lambda: self.read_data(iter=iter + 1))
-
-    def inference(self, data: pd.DataFrame) -> pd.DataFrame:
-        data['x_localization'] = data['x_localization'] + random.randint(MIN_NOISE_VAL, MAX_NOISE_VAL)
-        data['y_localization'] = data['y_localization'] + random.randint(MIN_NOISE_VAL, MAX_NOISE_VAL)
-
-        return data
 
     def ask(self):
         send(self.root.client_sock, Data("REQUEST", ""))
