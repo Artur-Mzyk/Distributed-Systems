@@ -45,6 +45,7 @@ class DataCollector(Base):
     index = Column(Integer, primary_key=True)
     object_id = Column(Integer)
     speed = Column(Float)
+    direction = Column(Float)
     x_localization = Column(Integer)
     y_localization = Column(Integer)
     receive_date = Column(DateTime)
@@ -53,10 +54,11 @@ class DataCollector(Base):
         """
         Return a string representation of the SpaceInfo object.
         """
-        return "<DataCollector(index={0}, object_id={1}, speed={2}, x_localization={3}, y_localization={4}, receive_date={5})>".format(
+        return "<DataCollector(index={0}, object_id={1}, speed={2}, direction={3}, x_localization={4}, y_localization={5}, receive_date={6})>".format(
             self.index,
             self.object_id,
             self.speed,
+            self.direction,
             self.x_localization,
             self.y_localization,
             self.receive_date

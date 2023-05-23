@@ -37,7 +37,7 @@ class DatabaseQueries:
                 self.space_data_generator.c.direction,
                 (self.space_data_generator.c.x_localization + randint(MIN_NOISE_VAL, MAX_NOISE_VAL)).label('x_localization'),
                 (self.space_data_generator.c.y_localization + randint(MIN_NOISE_VAL, MAX_NOISE_VAL)).label('y_localization'),
-                self.space_data_generator.c.sample_date.label('receive_data')
+                self.space_data_generator.c.sample_date.label('receive_date')
             ])
             .where(
                 and_(
@@ -58,7 +58,7 @@ class DatabaseQueries:
         )
         data_in_client_range = pd.DataFrame(self.engine.execute(stmt).fetchall())
         if len(data_in_client_range) > 0:
-            data_in_client_range.columns = ['object_id', 'speed', 'direction', 'x_localization', 'y_localization', 'receive_data']
+            data_in_client_range.columns = ['object_id', 'speed', 'direction', 'x_localization', 'y_localization', 'receive_date']
         return data_in_client_range
 
     def add_server_read_positions_info(self, client_receive_data_to_upload: List[Dict]) -> None:
@@ -69,8 +69,8 @@ class DatabaseQueries:
         :return: None
         """
         stmt = (
-            insert(self.filtered_results)
-            .values(client_receive_data_to_upload.to_dict(orient='records'))
+            insert(self.data_collector)
+            .values(client_receive_data_to_upload)
         )
         self.engine.execute(stmt)
 

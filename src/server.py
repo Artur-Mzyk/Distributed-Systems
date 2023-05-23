@@ -61,6 +61,7 @@ class MainApp(tk.Tk):
         self.client_socks = []
         self.messages = []
         self.map = None
+        self.DQ = DatabaseQueries(engine=engine)
 
         # Main frame
         container = ttk.Frame(self)
@@ -107,6 +108,8 @@ class MainApp(tk.Tk):
 
                 elif alert == "MAP":
                     self.map = content
+                    if self.map.__len__() > 0:
+                        self.DQ.add_server_read_positions_info(self.map.to_dict(orient='records'))
                     self.draw_map()
 
                 elif alert == "REQUEST":
