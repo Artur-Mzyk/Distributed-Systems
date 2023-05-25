@@ -113,8 +113,7 @@ class MainApp(tk.Tk):
                     self.draw_map()
 
                 elif alert == "GLOBAL MAP":
-                    map = self.DQ.get_result()
-                    print(map)
+                    map = [self.DQ.get_result(), self.locations]
                     send(client_sock, Data("GLOBAL MAP", map))
 
             except Exception as e:

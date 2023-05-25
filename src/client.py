@@ -113,6 +113,7 @@ class Window(tk.Frame):
         self.global_map_frame = ttk.Frame(self.global_map_tab)
         self.global_map_frame.grid(row=1, column=0)
 
+        self.space_range = SPACE_RANGE
         x1, y1, x2, y2 = SPACE_RANGE
 
         fig = plt.Figure(figsize=(10, 10), dpi=100)
@@ -173,21 +174,7 @@ class Window(tk.Frame):
                 self.location_label.set(content)
 
             elif alert == "GLOBAL MAP":
-                print(content)
-                self.global_ax.clear()
-                sns.scatterplot(data=content, x='x_localization', y='y_localization', hue='object_id', ax=self.global_ax)
-                x, y = self.location
-                self.global_ax.scatter([x], [y], marker="*")
-                self.global_ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-                self.global_ax.grid()
-                x1, y1, x2, y2 = SPACE_RANGE
-                a = max(x - self.range, x1)
-                b = max(y - self.range, y1)
-                w = 2 * self.range - max(0, a + 2 * self.range - x2)
-                h = 2 * self.range - max(0, b + 2 * self.range - y2)
-                rect = Rectangle((a, b), w, h, fill=False)
-                self.global_ax.add_patch(rect)
-                self.global_canvas.draw()
+                self.global_content = content
 
             elif alert == "CONNECTED":
                 self.tabs.select(2), self.tabs.select(1)
@@ -221,9 +208,26 @@ class Window(tk.Frame):
 
     def get_global_map(self):
         """
-
+        Method to get map with all received signals
+        self.global_content ~ [locations of stations, ranges of stations]
         """
         send(self.root.client_sock, Data("GLOBAL MAP", ""))
+        self.global_ax.clear()
+        sns.scatterplot(data=self.global_content[0], x='x_localization', y='y_localization', hue='object_id', ax=self.global_ax)
+        all_clients_locations_ranges = self.global_content[1]
+
+        for loc in all_clients_locations_ranges:
+            (x, y), rng = loc
+            self.global_ax.scatter([x], [y], marker="*")
+            a = max(x - rng, self.space_range[0])
+            b = max(y - rng, self.space_range[1])
+            w = 2 * rng - max(0, a + 2 * rng - self.space_range[2])
+            h = 2 * rng - max(0, b + 2 * rng - self.space_range[3])
+            rect = Rectangle((a, b), w, h, fill=False)
+            self.global_ax.add_patch(rect)
+            self.global_ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+            self.global_ax.grid()
+            self.global_canvas.draw()
 
 
 client_app = MainApp()
