@@ -43,6 +43,7 @@ class DatabaseUpload:
         """
         dataframes = [generate_trajectory_points(_) for _ in range(GENERATED_OBJECTS_NUMBER)]
         self.data_to_upload = pd.concat(dataframes, ignore_index=True)
+        print(self.data_to_upload)
 
     def plot_uploaded_data(self):
         """Generate a plot of uploaded data

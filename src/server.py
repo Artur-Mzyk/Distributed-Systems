@@ -106,14 +106,16 @@ class MainApp(tk.Tk):
                         send(client_sock, Data("CONNECTED", ""))
                         # self.draw_map()
 
-                elif alert == "MAP":
+                elif alert == "LOCAL MAP":
                     self.map = content
-                    if self.map.__len__() > 0:
+                    if len(self.map) > 0:
                         self.DQ.add_server_read_positions_info(self.map.to_dict(orient='records'))
                     self.draw_map()
 
-                elif alert == "REQUEST":
-                    send(client_sock, Data("GLOBAL", self.map))
+                elif alert == "GLOBAL MAP":
+                    map = self.DQ.get_result()
+                    print(map)
+                    send(client_sock, Data("GLOBAL MAP", map))
 
             except Exception as e:
                 print(f"[SERVER ERROR] {e}")
@@ -132,9 +134,6 @@ class MainApp(tk.Tk):
 
     def draw_map(self) -> None:
         self.ax.clear()
-
-        print(self.map)
-
         sns.scatterplot(data=self.map, x='x_localization', y='y_localization', hue='object_id', ax=self.ax)
         x1, y1, x2, y2 = SPACE_RANGE
 
