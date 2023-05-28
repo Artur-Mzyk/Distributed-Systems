@@ -108,8 +108,8 @@ class MainApp(tk.Tk):
 
                 elif alert == "LOCAL MAP":
                     self.map = content
-                    if len(self.map) > 0:
-                        self.DQ.add_server_read_positions_info(self.map.to_dict(orient='records'))
+                    self.DQ.add_server_read_positions_info(self.map.to_dict(orient='records'))
+                    self.DQ.grouped_information_of_objects_localization(time_window=pd.DateOffset(REFRESH_TIME))
                     self.draw_map()
 
                 elif alert == "GLOBAL MAP":

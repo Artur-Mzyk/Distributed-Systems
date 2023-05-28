@@ -115,18 +115,18 @@ class DatabaseQueries:
 
         :return: DataFrame: A DataFrame containing the object IDs, x localization, and y localization.
         """
-        # stmt = (
-        #     select([
-        #         self.filtered_results.columns.object_id,
-        #         self.filtered_results.columns.x_localization,
-        #         self.filtered_results.columns.y_localization
-        #     ])
-        # )
         stmt = (
             select([
-                self.data_collector.columns.object_id,
-                self.data_collector.columns.x_localization,
-                self.data_collector.columns.y_localization
+                self.filtered_results.columns.object_id,
+                self.filtered_results.columns.x_localization,
+                self.filtered_results.columns.y_localization
             ])
         )
+        # stmt = (
+        #     select([
+        #         self.data_collector.columns.object_id,
+        #         self.data_collector.columns.x_localization,
+        #         self.data_collector.columns.y_localization
+        #     ])
+        # )
         return pd.DataFrame(self.engine.execute(stmt).fetchall())
