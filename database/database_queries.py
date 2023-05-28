@@ -89,14 +89,13 @@ class DatabaseQueries:
             .where(
                 and_(
                     cast(self.data_collector.columns.receive_date, DateTime) >= datetime.now() - time_window,
-                    cast(self.data_collector.columns.receive_date, DateTime) <= datetime.now()
-                    # (
-                    #     (
-                    #         (self.data_collector.c.x_localization - self.data_collector.alias().c.x_localization) ** 2 +
-                    #         (self.data_collector.c.y_localization - self.data_collector.alias().c.y_localization) ** 2
-                    #     ) ** 0.5
-                    # )
-                    # <= 1.5 * self.data_collector.columns.speed
+                    cast(self.data_collector.columns.receive_date, DateTime) <= datetime.now(),
+                    func.sqrt(
+                        func.power(
+                           self.data_collector.c.x_localization - self.data_collector.alias().c.x_localization, 2) +
+                        func.power(
+                            self.data_collector.c.y_localization - self.data_collector.alias().c.y_localization, 2)
+                    ) <= 1.5 * self.data_collector.columns.speed
                 )
             )
             .group_by(
@@ -109,7 +108,7 @@ class DatabaseQueries:
             data_to_upload.columns = ['object_id', 'x_localization', 'y_localization']
             upload_stmt = (
                 insert(self.filtered_results)
-                .values(pd.DataFrame(data_to_upload.to_dict(orient='records')))
+                .values(data_to_upload.to_dict(orient='records'))
             )
             self.engine.execute(upload_stmt)
 
