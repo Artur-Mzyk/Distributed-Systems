@@ -88,12 +88,16 @@ class DatabaseQueries:
             ])
             .where(
                 and_(
-                    cast(self.data_collector.columns.sample_date, DateTime) >= datetime.now() - time_window,
-                    cast(self.data_collector.columns.sample_date, DateTime) <= datetime.now(),
-                    func.hypot(
-                        (self.data_collector.c.x_localization - self.data_collector.alias().c.x_localization),
-                        (self.data_collector.c.y_localization - self.data_collector.alias().c.y_localization))
-                    <= 1.5 * self.data_collector.columns.speed)
+                    cast(self.data_collector.columns.receive_date, DateTime) >= datetime.now() - time_window,
+                    cast(self.data_collector.columns.receive_date, DateTime) <= datetime.now(),
+                    (
+                        (
+                            (self.data_collector.c.x_localization - self.data_collector.alias().c.x_localization) ** 2 +
+                            (self.data_collector.c.y_localization - self.data_collector.alias().c.y_localization) ** 2
+                        ) ** 0.5
+                    )
+                    <= 1.5 * self.data_collector.columns.speed
+                )
             )
             .group_by(
                 self.data_collector.c.object_id
