@@ -183,27 +183,33 @@ class Window(tk.Frame):
                 self.root.after(int(1000 * REFRESH_TIME), self.read_data)
 
     def read_data(self, i: int = 0):
-        if i > 10:
+        if i > 1000:
             return None
 
         self.local_ax.clear()
-        data_to_upload = self.DQ.get_space_data_in_client_range(client_range=self.range, client_location=self.location,
+        data_to_upload = self.DQ.get_space_data_in_client_range(client_range=self.range,
+                                                                client_location=self.location,
                                                                 time_window=pd.DateOffset(seconds=REFRESH_TIME))
-        sns.scatterplot(data=data_to_upload, x='x_localization', y='y_localization', hue='object_id', ax=self.local_ax)
-        x, y = self.location
-        self.local_ax.scatter([x], [y], marker="*")
-        self.local_ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-        self.local_ax.grid()
-        x1, y1, x2, y2 = SPACE_RANGE
-        a = max(x - self.range, x1)
-        b = max(y - self.range, y1)
-        w = 2 * self.range - max(0, a + 2 * self.range - x2)
-        h = 2 * self.range - max(0, b + 2 * self.range - y2)
-        rect = Rectangle((a, b), w, h, fill=False)
-        self.local_ax.add_patch(rect)
-        self.local_canvas.draw()
-        send(self.root.client_sock, Data("LOCAL MAP", data_to_upload))
-        print(i)
+        if not data_to_upload.empty:
+            print('\n', data_to_upload, '\n')  # TODO delete prints
+            sns.scatterplot(data=data_to_upload, x='x_localization', y='y_localization', hue='object_id',
+                            ax=self.local_ax)
+            x, y = self.location
+            self.local_ax.scatter([x], [y], marker="*")
+            self.local_ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+            self.local_ax.grid()
+            x1, y1, x2, y2 = SPACE_RANGE
+            a = max(x - self.range, x1)
+            b = max(y - self.range, y1)
+            w = 2 * self.range - max(0, a + 2 * self.range - x2)
+            h = 2 * self.range - max(0, b + 2 * self.range - y2)
+            rect = Rectangle((a, b), w, h, fill=False)
+            self.local_ax.add_patch(rect)
+            self.local_canvas.draw()
+            send(self.root.client_sock, Data("LOCAL MAP", data_to_upload))
+        else:
+            print(i, 'searching...') # TODO delete prints
+            pass
         self.root.after(int(1000 * REFRESH_TIME), lambda: self.read_data(i=i + 1))
 
     def get_global_map(self):
