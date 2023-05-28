@@ -19,7 +19,7 @@ FONT: Tuple[str, int, str] = ("Garamond", 16, "bold")
 SPACE_RANGE: Tuple[int, int, int, int] = (-1000, -1000, 1000, 1000)
 
 # TIMING AND NOISE PARAMETERS
-REFRESH_TIME: float = 5
+REFRESH_TIME: float = 1
 MIN_NOISE_VAL: int = 0
 MAX_NOISE_VAL: int = 10
 
