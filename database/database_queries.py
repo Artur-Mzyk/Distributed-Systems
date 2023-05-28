@@ -103,12 +103,15 @@ class DatabaseQueries:
                 self.data_collector.c.object_id
             )
         )
+        data_to_upload = pd.DataFrame(self.engine.execute(grouped_stmt).fetchall())
 
-        upload_stmt = (
-            insert(self.filtered_results)
-            .values(pd.DataFrame(self.engine.execute(grouped_stmt).fetchall()).to_dict(orient='records'))
-        )
-        self.engine.execute(upload_stmt)
+        if not data_to_upload.empty:
+            data_to_upload.columns = ['object_id', 'x_localization', 'y_localization']
+            upload_stmt = (
+                insert(self.filtered_results)
+                .values(pd.DataFrame(data_to_upload.to_dict(orient='records')))
+            )
+            self.engine.execute(upload_stmt)
 
     def get_result(self) -> DataFrame:
         """Get the result from the filtered_results table.
@@ -122,11 +125,4 @@ class DatabaseQueries:
                 self.filtered_results.columns.y_localization
             ])
         )
-        # stmt = (
-        #     select([
-        #         self.data_collector.columns.object_id,
-        #         self.data_collector.columns.x_localization,
-        #         self.data_collector.columns.y_localization
-        #     ])
-        # )
         return pd.DataFrame(self.engine.execute(stmt).fetchall())
