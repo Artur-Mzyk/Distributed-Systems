@@ -121,6 +121,7 @@ class MainApp(tk.Tk):
                             detected_anomaly = list(set(self.anomalies) - set(self.prev_anomalies))
                             if detected_anomaly:
                                 print("\n Detect anomaly: {0} at {1}".format(detected_anomaly, datetime.datetime.now()))
+                                print(self.DQ.get_anomaly_detection_point(*detected_anomaly, datetime.datetime.now()))
                             self.prev_anomalies = self.anomalies
 
                         self.draw_map()

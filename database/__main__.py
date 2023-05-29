@@ -31,6 +31,7 @@ if __name__ == "__main__":
             detected_anomaly = list(set(anomalies) - set(prev_anomalies))
             if detected_anomaly:
                 print("\n Detect anomaly: {0} at {1}".format(detected_anomaly, datetime.datetime.now()))
+                print(DQ.get_anomaly_detection_point(*detected_anomaly, datetime.datetime.now()))
             prev_anomalies = anomalies
         plt.pause(delay_)
         i += 1

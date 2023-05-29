@@ -165,3 +165,20 @@ class DatabaseQueries:
 
         checking_anomaly = pd.DataFrame(self.engine.execute(stmt).fetchall(), columns=['object_id'])
         return checking_anomaly['object_id'].tolist()
+
+    def get_anomaly_detection_point(self, object_id: int, time_of_detection_anomaly: pd.DateOffset) -> pd.DataFrame:
+        stmt = (
+            select([
+                self.filtered_results.columns.object_id,
+                self.filtered_results.columns.x_localization,
+                self.filtered_results.columns.y_localization
+            ])
+            .where(
+                and_(
+                    self.filtered_results.columns.object_id == object_id,
+                    cast(self.filtered_results.columns.receive_date, DateTime) <= time_of_detection_anomaly
+                )
+            )
+            .limit(1)
+        )
+        return pd.DataFrame(self.engine.execute(stmt).fetchall())
