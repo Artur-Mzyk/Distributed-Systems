@@ -87,7 +87,8 @@ class DatabaseQueries:
             select([
                 self.data_collector.columns.object_id,
                 func.avg(self.data_collector.c.x_localization).label('x_localization'),
-                func.avg(self.data_collector.c.y_localization).label('y_localization')
+                func.avg(self.data_collector.c.y_localization).label('y_localization'),
+                self.data_collector.columns.receive_date,
             ])
             .where(
                 and_(
@@ -102,13 +103,14 @@ class DatabaseQueries:
                 )
             )
             .group_by(
-                self.data_collector.c.object_id
+                self.data_collector.c.object_id,
+                self.data_collector.c.receive_date
             )
         )
         data_to_upload = pd.DataFrame(self.engine.execute(grouped_stmt).fetchall())
 
         if not data_to_upload.empty:
-            data_to_upload.columns = ['object_id', 'x_localization', 'y_localization']
+            data_to_upload.columns = ['object_id', 'x_localization', 'y_localization', 'receive_date']
             upload_stmt = (
                 insert(self.filtered_results)
                 .values(data_to_upload.to_dict(orient='records'))
