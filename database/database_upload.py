@@ -168,13 +168,13 @@ def generate_trajectory_points_anomaly(object_id: int):
     generated_data2 = pd.DataFrame({'object_id': object_id,
                                     'speed': speed[1],
                                     'direction': direction[1],
-                                    'x_localization': x_location[(number_of_sample - ((number_of_sample - 1) // 2)):],
-                                    'y_localization': y_location[(number_of_sample - ((number_of_sample - 1) // 2)):],
-                                    'sample_date': datetime_array[(number_of_sample - ((number_of_sample - 1) // 2)):]})
+                                    'x_localization': x_location[(number_of_sample - ((number_of_sample - 1) // 2)) - 1:],
+                                    'y_localization': y_location[(number_of_sample - ((number_of_sample - 1) // 2)) - 1:],
+                                    'sample_date': datetime_array[(number_of_sample - ((number_of_sample - 1) // 2)) - 1:]})
     return pd.concat([generated_data1, generated_data2], ignore_index=True)
 
 
 def upload_data(engine: Engine):
     DU = DatabaseUpload(engine)
     DU.upload_data()
-    [DU.plot_uploaded_data(minutes_offset=_) for _ in range(1, 8, 3)]
+    DU.plot_uploaded_data(minutes_offset=10)

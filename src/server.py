@@ -6,6 +6,7 @@ import time
 import tkinter as tk
 import tkinter.ttk as ttk
 import matplotlib.pyplot as plt
+import datetime
 import random
 import pandas as pd
 import seaborn as sns
@@ -61,6 +62,8 @@ class MainApp(tk.Tk):
         self.client_socks = []
         self.messages = []
         self.map = None
+        self.anomalies = []
+        self.prev_anomalies = []
         self.DQ = DatabaseQueries(engine=engine)
 
         # Main frame
@@ -111,6 +114,15 @@ class MainApp(tk.Tk):
                     if self.map.__len__() > 0:
                         self.DQ.add_server_read_positions_info(self.map.to_dict(orient='records'))
                         self.DQ.grouped_information_of_objects_localization(time_window=pd.DateOffset(seconds=REFRESH_TIME))
+
+                        # Anomalies detection:
+                        self.anomalies = self.DQ.detecting_anomaly()
+                        if self.anomalies != self.prev_anomalies:
+                            detected_anomaly = list(set(self.anomalies) - set(self.prev_anomalies))
+                            if detected_anomaly:
+                                print("\n Detect anomaly: {0} at {1}".format(detected_anomaly, datetime.datetime.now()))
+                            self.prev_anomalies = self.anomalies
+
                         self.draw_map()
 
                 elif alert == "GLOBAL MAP":
