@@ -69,17 +69,35 @@ class MainApp(tk.Tk):
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
 
-        self.frame = tk.Frame(container)
-        self.frame.grid(row=0, column=0)
+        self.tabs = ttk.Notebook(container)
+        self.tabs.pack()
+
+        self.local_map_tab = tk.Frame(self.tabs, highlightbackground=HIGHLIGHT, highlightthickness=BORDER)
+        self.tabs.add(self.local_map_tab, text="Local map")
+
+        self.global_map_tab = tk.Frame(self.tabs, highlightbackground=HIGHLIGHT, highlightthickness=BORDER)
+        self.tabs.add(self.global_map_tab, text="Global map")
+
+        self.space_range = SPACE_RANGE
+        x1, y1, x2, y2 = SPACE_RANGE
 
         fig = plt.Figure(figsize=(10, 10), dpi=100)
-        self.ax = fig.add_subplot(1, 1, 1)
-        x1, y1, x2, y2 = SPACE_RANGE
-        self.ax.grid()
-        self.ax.set_title("x"), self.ax.set_ylabel("y")
-        self.ax.set_xlim([x1, x2]), self.ax.set_ylim([y1, y2])
-        self.canvas = FigureCanvasTkAgg(fig, self.frame)
-        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        self.local_ax = fig.add_subplot(1, 1, 1)
+        self.local_ax.grid()
+        self.local_ax.set_title("x"), self.local_ax.set_ylabel("y")
+        self.local_ax.set_xlim([x1, x2]), self.local_ax.set_ylim([y1, y2])
+        self.local_canvas = FigureCanvasTkAgg(fig, self.local_map_tab)
+        self.local_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+        fig = plt.Figure(figsize=(10, 10), dpi=100)
+        self.global_ax = fig.add_subplot(1, 1, 1)
+        self.global_ax.grid()
+        self.global_ax.set_title("x"), self.global_ax.set_ylabel("y")
+        self.global_ax.set_xlim([x1, x2]), self.global_ax.set_ylim([y1, y2])
+        self.global_canvas = FigureCanvasTkAgg(fig, self.global_map_tab)
+        self.global_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+        self.tabs.select(0)
 
     def handle_client(self, client_sock: socket) -> None:
         """
@@ -113,6 +131,27 @@ class MainApp(tk.Tk):
                         self.DQ.grouped_information_of_objects_localization(time_window=pd.DateOffset(seconds=REFRESH_TIME))
                         self.draw_map()
 
+                        x1, y1, x2, y2 = SPACE_RANGE
+                        map = [self.DQ.get_result(), self.locations]
+                        self.global_ax.clear()
+                        sns.scatterplot(data=map[0], x='x_localization', y='y_localization', hue='object_id', ax=self.global_ax)
+                        self.global_ax.set(xlim=(x1, x2))
+                        self.global_ax.set(ylim=(y1, y2))
+                        self.global_ax.grid()
+                        all_clients_locations_ranges = map[1]
+
+                        for loc in all_clients_locations_ranges:
+                            (x, y), rng = loc
+                            self.global_ax.scatter([x], [y], marker="*")
+                            # a = max(x - rng, self.space_range[0])
+                            # b = max(y - rng, self.space_range[1])
+                            # w = 2 * rng - max(0, a + 2 * rng - self.space_range[2])
+                            # h = 2 * rng - max(0, b + 2 * rng - self.space_range[3])
+                            # rect = Rectangle((a, b), w, h, fill=False)
+                            # self.global_ax.add_patch(rect)
+                            self.global_ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+                            self.global_canvas.draw()
+
                 elif alert == "GLOBAL MAP":
                     map = [self.DQ.get_result(), self.locations]
                     send(client_sock, Data("GLOBAL MAP", map))
@@ -133,22 +172,22 @@ class MainApp(tk.Tk):
             Thread(target=self.handle_client, args=(client_sock,)).start()
 
     def draw_map(self) -> None:
-        self.ax.clear()
-        sns.scatterplot(data=self.map, x='x_localization', y='y_localization', hue='object_id', ax=self.ax)
+        self.local_ax.clear()
+        sns.scatterplot(data=self.map, x='x_localization', y='y_localization', hue='object_id', ax=self.local_ax)
         x1, y1, x2, y2 = SPACE_RANGE
 
         for loc in self.locations:
             (x, y), rng = loc
-            self.ax.scatter([x], [y], marker="*")
+            self.local_ax.scatter([x], [y], marker="*")
             a = max(x - rng, x1)
             b = max(y - rng, y1)
             w = 2 * rng - max(0, a + 2 * rng - x2)
             h = 2 * rng - max(0, b + 2 * rng - y2)
             rect = Rectangle((a, b), w, h, fill=False)
-            self.ax.add_patch(rect)
-            self.ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-            self.ax.grid()
-            self.canvas.draw()
+            self.local_ax.add_patch(rect)
+            self.local_ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+            self.local_ax.grid()
+            self.local_canvas.draw()
 
         # DQ.add_server_read_positions_info(data_to_upload)
         # df = DQ.get_result()
