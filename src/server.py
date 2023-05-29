@@ -175,6 +175,9 @@ class MainApp(tk.Tk):
         self.local_ax.clear()
         sns.scatterplot(data=self.map, x='x_localization', y='y_localization', hue='object_id', ax=self.local_ax)
         x1, y1, x2, y2 = SPACE_RANGE
+        self.ax.set(xlim=(x1, x2))
+        self.ax.set(ylim=(y1, y2))
+        self.ax.grid()
 
         for loc in self.locations:
             (x, y), rng = loc
