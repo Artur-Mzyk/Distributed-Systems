@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 from random import uniform, randint, choice
 from sqlalchemy.engine import Engine
-from src.config import SPACE_RANGE, GENERATED_OBJECTS_NUMBER, MIN_NUMBER_OF_SAMPLES, MAX_NUMBER_OF_SAMPLES
+from src.config import SPACE_RANGE, GENERATED_OBJECTS_NUMBER, MIN_NUMBER_OF_SAMPLES, MAX_NUMBER_OF_SAMPLES, \
+    MAX_START_TRAJECTORY_OFFSET_SECONDS
 from typing import List, Tuple
 
 
@@ -45,16 +46,18 @@ class DatabaseUpload:
         self.data_to_upload = pd.concat(dataframes, ignore_index=True)
         print(self.data_to_upload)
 
-    def plot_uploaded_data(self):
+    def plot_uploaded_data(self, minutes_offset: int):
         """Generate a plot of uploaded data
         """
         fig, ax = plt.subplots()
-        sns.scatterplot(data=self.data_to_upload, x='x_localization', y='y_localization', hue='object_id', ax=ax)
+        sample_date = datetime.now() + pd.DateOffset(minutes=minutes_offset)
+        sns.scatterplot(data=self.data_to_upload[self.data_to_upload.sample_date <= sample_date], x='x_localization',
+                        y='y_localization', hue='object_id', ax=ax)
         ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         ax.grid(True)
         ax.set(xlim=(SPACE_RANGE[0], SPACE_RANGE[2]),
                ylim=(SPACE_RANGE[1], SPACE_RANGE[3]),
-               title='Generated space trajectory')
+               title='Generated space trajectory: {}'.format(sample_date.time()))
         plt.show()
 
 
@@ -66,8 +69,8 @@ def generate_trajectory_points(object_id: int):
     """
     number_of_sample = randint(MIN_NUMBER_OF_SAMPLES, MAX_NUMBER_OF_SAMPLES)
     x_location, y_location, speed, direction = generate_line_trajectory_points(number_of_sample=number_of_sample - 1)
-    start_date = datetime.now()
-    datetime_array = pd.date_range(start=start_date + pd.DateOffset(seconds=randint(0, 60)),
+    start_date = datetime.now() + pd.DateOffset(seconds=randint(0, MAX_START_TRAJECTORY_OFFSET_SECONDS))
+    datetime_array = pd.date_range(start=start_date,
                                    end=start_date + pd.DateOffset(seconds=speed * number_of_sample / 10),
                                    periods=number_of_sample)
 
@@ -108,4 +111,4 @@ def generate_line_trajectory_points(number_of_sample: int) -> Tuple[List, List, 
 def upload_data(engine: Engine):
     DU = DatabaseUpload(engine)
     DU.upload_data()
-    DU.plot_uploaded_data()
+    [DU.plot_uploaded_data(minutes_offset=_) for _ in range(1, 6, 2)]
