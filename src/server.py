@@ -136,6 +136,9 @@ class MainApp(tk.Tk):
         self.ax.clear()
         sns.scatterplot(data=self.map, x='x_localization', y='y_localization', hue='object_id', ax=self.ax)
         x1, y1, x2, y2 = SPACE_RANGE
+        self.ax.set(xlim=(x1, x2))
+        self.ax.set(ylim=(y1, y2))
+        self.ax.grid()
 
         for loc in self.locations:
             (x, y), rng = loc
@@ -147,7 +150,6 @@ class MainApp(tk.Tk):
             rect = Rectangle((a, b), w, h, fill=False)
             self.ax.add_patch(rect)
             self.ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-            self.ax.grid()
             self.canvas.draw()
 
         # DQ.add_server_read_positions_info(data_to_upload)
