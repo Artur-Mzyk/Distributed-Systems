@@ -217,9 +217,13 @@ class Window(tk.Frame):
         Method to get map with all received signals
         self.global_content ~ [locations of stations, ranges of stations]
         """
+        x1, y1, x2, y2 = SPACE_RANGE
         send(self.root.client_sock, Data("GLOBAL MAP", ""))
         self.global_ax.clear()
         sns.scatterplot(data=self.global_content[0], x='x_localization', y='y_localization', hue='object_id', ax=self.global_ax)
+        self.global_ax.set(xlim=(x1, x2))
+        self.global_ax.set(ylim=(y1, y2))
+        self.global_ax.grid()
         all_clients_locations_ranges = self.global_content[1]
 
         for loc in all_clients_locations_ranges:
@@ -232,7 +236,6 @@ class Window(tk.Frame):
             rect = Rectangle((a, b), w, h, fill=False)
             self.global_ax.add_patch(rect)
             self.global_ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-            self.global_ax.grid()
             self.global_canvas.draw()
 
 
