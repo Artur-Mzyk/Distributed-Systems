@@ -22,6 +22,7 @@ SPACE_RANGE: Tuple[int, int, int, int] = (-1000, -1000, 1000, 1000)
 REFRESH_TIME: float = 0.5
 MIN_NOISE_VAL: int = 0
 MAX_NOISE_VAL: int = 10
+PLOT_EXPIRATION_MINUTES: int = 2
 
 # DATABASE PARAMETERS
 DB_STRING: str = "postgresql://postgres:postgres@localhost:5432/postgres"

@@ -5,7 +5,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy import Table, MetaData, select, and_, DateTime, cast, insert, func
 from typing import List, Dict
 from random import randint
-from src.config import MIN_NOISE_VAL, MAX_NOISE_VAL
+from src.config import MIN_NOISE_VAL, MAX_NOISE_VAL, PLOT_EXPIRATION_MINUTES
 
 
 class DatabaseQueries:
@@ -17,9 +17,9 @@ class DatabaseQueries:
         """
         self.engine = engine
 
-        self.space_data_generator = Table('space_data_generator', MetaData(), autoload=True, autoload_with=engine)
-        self.data_collector = Table('data_collector', MetaData(), autoload=True, autoload_with=engine)
-        self.filtered_results = Table('filtered_results', MetaData(), autoload=True, autoload_with=engine)
+        self.space_data_generator = Table('space_data_generator', MetaData(), autoload_with=engine)
+        self.data_collector = Table('data_collector', MetaData(), autoload_with=engine)
+        self.filtered_results = Table('filtered_results', MetaData(), autoload_with=engine)
 
     def get_space_data_in_client_range(self, client_range: int, client_location: List[int],
                                        time_window: DateOffset) -> DataFrame:
@@ -35,8 +35,10 @@ class DatabaseQueries:
                 self.space_data_generator.c.object_id,
                 self.space_data_generator.c.speed,
                 self.space_data_generator.c.direction,
-                (self.space_data_generator.c.x_localization + randint(MIN_NOISE_VAL, MAX_NOISE_VAL)).label('x_localization'),
-                (self.space_data_generator.c.y_localization + randint(MIN_NOISE_VAL, MAX_NOISE_VAL)).label('y_localization'),
+                (self.space_data_generator.c.x_localization + randint(MIN_NOISE_VAL, MAX_NOISE_VAL)).label(
+                    'x_localization'),
+                (self.space_data_generator.c.y_localization + randint(MIN_NOISE_VAL, MAX_NOISE_VAL)).label(
+                    'y_localization'),
                 self.space_data_generator.c.sample_date.label('receive_date')
             ])
             .where(
@@ -58,7 +60,8 @@ class DatabaseQueries:
         )
         data_in_client_range = pd.DataFrame(self.engine.execute(stmt).fetchall())
         if len(data_in_client_range) > 0:
-            data_in_client_range.columns = ['object_id', 'speed', 'direction', 'x_localization', 'y_localization', 'receive_date']
+            data_in_client_range.columns = ['object_id', 'speed', 'direction', 'x_localization', 'y_localization',
+                                            'receive_date']
         return data_in_client_range
 
     def add_server_read_positions_info(self, client_receive_data_to_upload: List[Dict]) -> None:
@@ -92,7 +95,7 @@ class DatabaseQueries:
                     cast(self.data_collector.columns.receive_date, DateTime) <= datetime.now(),
                     func.sqrt(
                         func.power(
-                           self.data_collector.c.x_localization - self.data_collector.alias().c.x_localization, 2) +
+                            self.data_collector.c.x_localization - self.data_collector.alias().c.x_localization, 2) +
                         func.power(
                             self.data_collector.c.y_localization - self.data_collector.alias().c.y_localization, 2)
                     ) <= 1.5 * self.data_collector.columns.speed
@@ -123,5 +126,9 @@ class DatabaseQueries:
                 self.filtered_results.columns.x_localization,
                 self.filtered_results.columns.y_localization
             ])
+            .where(
+                cast(self.data_collector.columns.receive_date, DateTime) >= datetime.now() - pd.DateOffset(
+                    minutes=PLOT_EXPIRATION_MINUTES)
+            )
         )
         return pd.DataFrame(self.engine.execute(stmt).fetchall())
