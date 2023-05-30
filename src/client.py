@@ -24,7 +24,7 @@ from database.database_queries import DatabaseQueries
 
 
 # CLASSES
-class MainApp(tk.Tk):
+class ClientApp(tk.Tk):
     """
     Class to represent the client interface
     """
@@ -63,7 +63,7 @@ class Window(tk.Frame):
     Class to represent the lobby window
     """
 
-    def __init__(self, parent: ttk.Frame, root: MainApp) -> None:
+    def __init__(self, parent: ttk.Frame, root: ClientApp) -> None:
         """
         Constructor
         :param parent: Parent frame
@@ -239,5 +239,5 @@ class Window(tk.Frame):
             self.global_canvas.draw()
 
 
-client_app = MainApp()
+client_app = ClientApp()
 client_app.mainloop()

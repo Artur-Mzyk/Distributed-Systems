@@ -76,16 +76,20 @@ class FilteredResults(Base):
     object_id = Column(Integer)
     x_localization = Column(Integer)
     y_localization = Column(Integer)
+    direction = Column(Float)
+    receive_date = Column(DateTime)
 
     def __repr__(self):
         """
         Return a string representation of the SpaceInfo object.
         """
-        return "<FilteredResults(index={0}, object_id={1}, x_localization={2}, y_localization={3})>".format(
+        return "<FilteredResults(index={0}, object_id={1}, x_localization={2}, y_localization={3}, direction={4}, receive_date={5})>".format(
             self.index,
             self.object_id,
             self.x_localization,
-            self.y_localization
+            self.y_localization,
+            self.direction,
+            self.receive_date
         )
 
 
