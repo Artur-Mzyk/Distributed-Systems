@@ -151,27 +151,6 @@ class ServerApp(tk.Tk):
                         if len(global_map) > 0:
                             draw_map(self.global_ax, self.global_canvas, global_map, locations=self.locations, anomalies=self.anomalies)
 
-                        x1, y1, x2, y2 = SPACE_RANGE
-                        map = [self.DQ.get_result(), self.locations]
-                        self.global_ax.clear()
-                        sns.scatterplot(data=map[0], x='x_localization', y='y_localization', hue='object_id', ax=self.global_ax)
-                        self.global_ax.set(xlim=(x1, x2))
-                        self.global_ax.set(ylim=(y1, y2))
-                        self.global_ax.grid()
-                        all_clients_locations_ranges = map[1]
-
-                        for loc in all_clients_locations_ranges:
-                            (x, y), rng = loc
-                            self.global_ax.scatter([x], [y], marker="*")
-                            # a = max(x - rng, self.space_range[0])
-                            # b = max(y - rng, self.space_range[1])
-                            # w = 2 * rng - max(0, a + 2 * rng - self.space_range[2])
-                            # h = 2 * rng - max(0, b + 2 * rng - self.space_range[3])
-                            # rect = Rectangle((a, b), w, h, fill=False)
-                            # self.global_ax.add_patch(rect)
-                            self.global_ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-                            self.global_canvas.draw()
-
                 elif alert == "GLOBAL MAP":
                     map = [self.DQ.get_result(), self.locations]
                     send(client_sock, Data("GLOBAL MAP", map))
