@@ -130,10 +130,10 @@ class DatabaseQueries:
                 self.filtered_results.columns.x_localization,
                 self.filtered_results.columns.y_localization
             ])
-            .where(
-                cast(self.data_collector.columns.receive_date, DateTime) >= datetime.now() - pd.DateOffset(
-                    minutes=PLOT_EXPIRATION_MINUTES)
-            )
+            # .where(
+            #     cast(self.data_collector.columns.receive_date, DateTime) >= datetime.now() - pd.DateOffset(
+            #         minutes=PLOT_EXPIRATION_MINUTES)
+            # )
         )
         return pd.DataFrame(self.engine.execute(stmt).fetchall())
 

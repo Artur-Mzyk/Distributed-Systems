@@ -26,10 +26,11 @@ from communication import send, receive, Data
 from database.database_architecture import create_architecture
 from database.database_upload import upload_data
 from database.database_queries import DatabaseQueries
+from utils import draw_map
 
 
 # CLASSES
-class MainApp(tk.Tk):
+class ServerApp(tk.Tk):
     """
     Class to represent the client interface
     """
@@ -61,7 +62,6 @@ class MainApp(tk.Tk):
         self.locations = []
         self.client_socks = []
         self.messages = []
-        self.map = None
         self.anomalies = []
         self.prev_anomalies = []
         self.DQ = DatabaseQueries(engine=engine)
@@ -72,17 +72,32 @@ class MainApp(tk.Tk):
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
 
-        self.frame = tk.Frame(container)
-        self.frame.grid(row=0, column=0)
+        self.tabs = ttk.Notebook(container)
+        self.tabs.pack()
+
+        self.local_map_tab = tk.Frame(self.tabs, highlightbackground=HIGHLIGHT, highlightthickness=BORDER)
+        self.tabs.add(self.local_map_tab, text="Local map")
+
+        self.global_map_tab = tk.Frame(self.tabs, highlightbackground=HIGHLIGHT, highlightthickness=BORDER)
+        self.tabs.add(self.global_map_tab, text="Global map")
 
         fig = plt.Figure(figsize=(10, 10), dpi=100)
-        self.ax = fig.add_subplot(1, 1, 1)
-        x1, y1, x2, y2 = SPACE_RANGE
-        self.ax.grid()
-        self.ax.set_title("x"), self.ax.set_ylabel("y")
-        self.ax.set_xlim([x1, x2]), self.ax.set_ylim([y1, y2])
-        self.canvas = FigureCanvasTkAgg(fig, self.frame)
-        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        self.local_ax = fig.add_subplot(1, 1, 1)
+        self.local_ax.grid()
+        self.local_ax.set(xlim=(SPACE_RANGE[0], SPACE_RANGE[2]), ylim=(SPACE_RANGE[1], SPACE_RANGE[3]),
+                          xlabel="x", ylabel="y")
+        self.local_canvas = FigureCanvasTkAgg(fig, self.local_map_tab)
+        self.local_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+        fig = plt.Figure(figsize=(10, 10), dpi=100)
+        self.global_ax = fig.add_subplot(1, 1, 1)
+        self.global_ax.grid()
+        self.global_ax.set(xlim=(SPACE_RANGE[0], SPACE_RANGE[2]), ylim=(SPACE_RANGE[1], SPACE_RANGE[3]),
+                           xlabel="x", ylabel="y")
+        self.global_canvas = FigureCanvasTkAgg(fig, self.global_map_tab)
+        self.global_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+        self.tabs.select(0)
 
     def handle_client(self, client_sock: socket) -> None:
         """
@@ -107,24 +122,33 @@ class MainApp(tk.Tk):
                     else:
                         self.locations.append(content)
                         send(client_sock, Data("CONNECTED", ""))
-                        # self.draw_map()
 
                 elif alert == "LOCAL MAP":
-                    self.map = content
-                    if self.map.__len__() > 0:
-                        self.DQ.add_server_read_positions_info(self.map.to_dict(orient='records'))
+                    local_map = content
+
+                    if len(local_map) > 0:
+                        self.DQ.add_server_read_positions_info(local_map.to_dict(orient='records'))
                         self.DQ.grouped_information_of_objects_localization(time_window=pd.DateOffset(seconds=REFRESH_TIME))
 
                         # Anomalies detection:
                         self.anomalies = self.DQ.detecting_anomaly()
+
                         if self.anomalies != self.prev_anomalies:
                             detected_anomaly = list(set(self.anomalies) - set(self.prev_anomalies))
+
                             if detected_anomaly:
                                 print("\n Detect anomaly: {0} at {1}".format(detected_anomaly, datetime.datetime.now()))
-                                print(self.DQ.get_anomaly_detection_point(*detected_anomaly, datetime.datetime.now()))
+                                anomaly_point = self.DQ.get_anomaly_detection_point(detected_anomaly[0], datetime.datetime.now())
+                                print(anomaly_point)
+
                             self.prev_anomalies = self.anomalies
 
-                        self.draw_map()
+                        draw_map(self.local_ax, self.local_canvas, local_map, locations=self.locations)
+
+                        global_map = self.DQ.get_result()
+
+                        if len(global_map) > 0:
+                            draw_map(self.global_ax, self.global_canvas, global_map, locations=self.locations, anomalies=self.anomalies)
 
                 elif alert == "GLOBAL MAP":
                     map = [self.DQ.get_result(), self.locations]
@@ -145,27 +169,6 @@ class MainApp(tk.Tk):
             self.client_socks.append(client_sock)
             Thread(target=self.handle_client, args=(client_sock,)).start()
 
-    def draw_map(self) -> None:
-        self.ax.clear()
-        sns.scatterplot(data=self.map, x='x_localization', y='y_localization', hue='object_id', ax=self.ax)
-        x1, y1, x2, y2 = SPACE_RANGE
 
-        for loc in self.locations:
-            (x, y), rng = loc
-            self.ax.scatter([x], [y], marker="*")
-            a = max(x - rng, x1)
-            b = max(y - rng, y1)
-            w = 2 * rng - max(0, a + 2 * rng - x2)
-            h = 2 * rng - max(0, b + 2 * rng - y2)
-            rect = Rectangle((a, b), w, h, fill=False)
-            self.ax.add_patch(rect)
-            self.ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-            self.ax.grid()
-            self.canvas.draw()
-
-        # DQ.add_server_read_positions_info(data_to_upload)
-        # df = DQ.get_result()
-
-
-server_app = MainApp()
+server_app = ServerApp()
 server_app.mainloop()

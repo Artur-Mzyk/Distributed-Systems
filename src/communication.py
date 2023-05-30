@@ -6,7 +6,7 @@ import struct
 
 from socket import socket
 from pickle import dumps, loads
-from typing import Union, Tuple, List, Optional
+from typing import Union, Tuple, List, Optional, Any
 
 # PROJECT PACKAGES
 
@@ -16,7 +16,7 @@ class Data:
     Class to represent the data sent during the communication
     """
 
-    def __init__(self, alert: str, content) -> None:
+    def __init__(self, alert: str, content: Any) -> None:
         """
         Constructor
         :param alert: Data alert
