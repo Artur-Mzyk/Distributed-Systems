@@ -1,0 +1,1 @@
+This part of the project involved creating a database and generating sample input data that was used in the "Search for Extraterrestrial Intelligence" project. An architecture was designed, data loading was performed, and a module was created to handle queries using SQLalchemy.
